@@ -1,0 +1,25 @@
+{
+    "name": "node-red-node-openwhisk",
+    "version": "0.1.0",
+    "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk",
+    "license": "Apache",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/node-red/node-red-node-openwhisk.git"
+    },
+    "keywords": [
+        "node-red",
+        "openwhisk"
+    ],
+    "node-red": {
+        "nodes": {
+            "openwhisk": "openwhisk/openwhisk.js"
+        }
+    },
+    "contributors": [
+        "Nick O'Leary <nick.oleary@gmail.com>"
+    ],
+    "dependencies": {
+        "request": "2.69.*"
+    }
+}
