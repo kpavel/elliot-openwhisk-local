@@ -6,7 +6,7 @@ A set of Node-RED nodes for interacting with IBM Bluemix OpenWhisk.
 ## Install
 
 Run the following command in the user directory of your Node-RED install. This is
-usually ``~/.node-red`.
+usually `~/.node-red`.
 
 ```
 npm install node-red-node-openwhisk
@@ -34,7 +34,7 @@ any other type is ignored.
 
 ### Invoke an action
 
-The action node can be used to inoke an action and pass on the result in the flow.
+The action node can be used to invoke an action and pass on the result in the flow.
 
 The namespace and trigger can be configured in the node or, if left blank,
 provided by `msg.namespace` and `msg.action` respectively.
