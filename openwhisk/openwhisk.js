@@ -48,8 +48,12 @@ module.exports = function(RED) {
         request(url,opts,function(err,resp,body) {
             if (err) {
                 return done(err);
+            } else if (resp.statusCode === 401) {
+                return done(new Error("OpenWhisk authentication failed"));
+            } else if (resp.statusCode === 404) {
+                return done(404);
             } else if (resp.statusCode !== 200) {
-                return done(new Error("Unexpected response: "+resp.statusCode));
+                return done(new Error("Unexpected OpenWhisk response: "+err));
             }
             return done(null,body);
         })
@@ -77,13 +81,16 @@ module.exports = function(RED) {
 
             if (!namespace) {
                 return node.error("No namespace provided",msg);
-            } else if (!action) {
-                return node.error("No action provided",msg);
+            } else if (!trigger) {
+                return node.error("No trigger provided",msg);
             }
             node.status({fill:"yellow",shape:"dot",text:"invoking"});
             sendRequest(this.service,"/namespaces/"+namespace+"/triggers/"+trigger,{method:"POST",body:msg.payload,json:true},function(err,res) {
                 if (err) {
                     node.status({fill:"red",shape:"dot",text:"failed"});
+                    if (err === 404) {
+                        err = new Error("OpenWhisk trigger "+namespace+"/"+trigger+" not found");
+                    }
                     return node.error(err,msg);
                 } else if (res.error) {
                     node.status({fill:"red",shape:"dot",text:"failed"});
@@ -120,6 +127,9 @@ module.exports = function(RED) {
             sendRequest(this.service,"/namespaces/"+namespace+"/actions/"+action,{method:"POST",body:msg.payload,json:true,qs:{blocking:"true"}},function(err,res) {
                 if (err) {
                     node.status({fill:"red",shape:"dot",text:"failed"});
+                    if (err === 404) {
+                        err = new Error("OpenWhisk action "+namespace+"/"+action+" not found");
+                    }
                     return node.error(err,msg);
                 } else if (res.error) {
                     node.status({fill:"red",shape:"dot",text:"failed"});
