@@ -32,6 +32,19 @@ provided by `msg.namespace` and `msg.trigger` respectively.
 `msg.payload` should be an object of key-value pairs to pass to the trigger;
 any other type is ignored.
 
+### Create or edit a trigger
+
+The trigger node can be used to create new triggers or modify properties for
+existing ones.
+
+Fill in the service, namespace and trigger name in the edit dialog. The node will
+retrieve and display the current trigger properties from the OpenWhisk service.
+
+Selecting the "Allow Edits" checkbox will allow you to modify these properties.
+
+On deployment, the updated properties will be published to the OpenWhisk
+provider.
+
 ### Invoke an action
 
 The action node can be used to invoke an action and pass on the result in the flow.
@@ -46,3 +59,16 @@ The output message contains the following properties:
 
   - `payload` is the result of the action
   - `data` is the complete response object
+
+### Create or edit an action
+
+The action node can be used to create new actions or modify properties for
+existing ones.
+
+Fill in the service, namespace and action name in the edit dialog. The node will
+retrieve and display the current action source and properties from the OpenWhisk service.
+
+Selecting the "Allow Edits" checkbox will allow you to modify these properties.
+
+On deployment, the updated properties will be published to the OpenWhisk
+provider.

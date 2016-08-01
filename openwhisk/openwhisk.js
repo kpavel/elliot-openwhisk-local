@@ -16,7 +16,46 @@
 
 module.exports = function(RED) {
     "use strict";
-    var request = require('request');
+    var openwhisk = require('openwhisk');
+
+    // API to retrieve OW Action source code at runtime.
+    RED.httpAdmin.get('/openwhisk-action', function (req, res) {
+      if (!req.query.id && !req.query.key) {
+        return res.json("");
+      }
+
+      var client;
+
+      if (req.query.id) {
+        client = RED.nodes.getNode(req.query.id).client;
+      } else {
+        client = openwhisk({api: req.query.api, api_key: req.query.key});
+      }
+
+      client.actions.get({actionName: req.query.action, namespace: req.query.namespace})
+        .then(function (result) { res.json(result) })
+        .catch(function (err) { console.log(err); res.json({exec: {code: ""}});});
+    });
+
+    // API to retrieve OW Trigger definition at runtime.
+    RED.httpAdmin.get('/openwhisk-trigger', function (req, res) {
+      if (!req.query.id && !req.query.key) {
+        return res.json("");
+      }
+
+      var client;
+
+      if (req.query.id) {
+        client = RED.nodes.getNode(req.query.id).client;
+      } else {
+        client = openwhisk({api: req.query.api, api_key: req.query.key});
+      }
+
+      client.triggers.get({triggerName: req.query.trigger, namespace: req.query.namespace})
+        .then(function (result) { res.json(result) })
+        .catch(function (err) { console.log(err); res.json({parameters: []});});
+    });
+
 
     function OpenWhiskService(n){
         RED.nodes.createNode(this,n);
@@ -34,31 +73,9 @@ module.exports = function(RED) {
                 this.error("Missing api url");
             }
         }
-    }
-    function sendRequest(service,endPoint,opts,done) {
-        var url = service.api+endPoint;
-        opts = opts || {};
-        opts.headers = {
-            "Content-type": "application/json",
-            "Authorization": "Basic "+new Buffer(service.credentials.key).toString('base64')
-        };
-        if (typeof opts.body !== "object") {
-            opts.body = {};
-        }
-        request(url,opts,function(err,resp,body) {
-            if (err) {
-                return done(err);
-            } else if (resp.statusCode === 401) {
-                return done(new Error("OpenWhisk authentication failed"));
-            } else if (resp.statusCode === 404) {
-                return done(404);
-            } else if (resp.statusCode !== 200) {
-                return done(new Error("Unexpected OpenWhisk response: "+err));
-            }
-            return done(null,body);
-        })
-    }
 
+        this.client = openwhisk({api: this.api, api_key: this.credentials.key});
+    }
 
     RED.nodes.registerType("openwhisk-service",OpenWhiskService,{
         credentials: {
@@ -75,6 +92,30 @@ module.exports = function(RED) {
             return;
         }
         var node = this;
+
+        if (n.edit) {
+          node.log('Deploying OpenWhisk Trigger: ' + n.namespace + '/' + n.trigger);
+          node.status({fill:"yellow",shape:"dot",text:"deploying"});
+
+          var params = n.params.filter(function (param) {
+            return param.key !== '';
+          })
+
+          var trigger = { 
+            parameters: params
+          };
+
+          this.service.client.triggers.update({triggerName: n.trigger, namespace: n.namespace, trigger: trigger})
+            .then(function (res) {
+              node.status({});
+            })
+            .catch(function (err) {
+              node.status({fill:"red", shape:"dot", text:"deploy failed"});
+              node.error(err.message, err.message);
+            });
+        }
+
+
         this.on('input', function(msg) {
             var namespace = node.namespace || msg.namespace;
             var trigger = node.trigger || msg.trigger;
@@ -85,23 +126,23 @@ module.exports = function(RED) {
                 return node.error("No trigger provided",msg);
             }
             node.status({fill:"yellow",shape:"dot",text:"invoking"});
-            sendRequest(this.service,"/namespaces/"+namespace+"/triggers/"+trigger,{method:"POST",body:msg.payload,json:true},function(err,res) {
-                if (err) {
-                    node.status({fill:"red",shape:"dot",text:"failed"});
-                    if (err === 404) {
-                        err = new Error("OpenWhisk trigger "+namespace+"/"+trigger+" not found");
-                    }
-                    return node.error(err,msg);
-                } else if (res.error) {
-                    node.status({fill:"red",shape:"dot",text:"failed"});
-                    return node.error(res.error,msg);
-                } else {
-                    node.status({});
-                }
-            })
-        })
 
+            var params = msg.payload;
+            if (typeof params !== "object") {
+              params = {};
+            }
+
+            node.service.client.triggers.invoke({triggerName: trigger, namespace: namespace, params: params})
+              .then(function (res) {
+                node.status({});
+              })
+              .catch(function (err) {
+                node.status({fill:"red", shape:"dot", text:"failed"});
+                node.error(err.message, err.message);
+              });
+        })
     }
+
     RED.nodes.registerType("openwhisk-trigger",OpenWhiskTrigger);
 
     function OpenWhiskAction(n){
@@ -112,7 +153,32 @@ module.exports = function(RED) {
         if (!this.service || !this.service.valid) {
             return;
         }
+
         var node = this;
+
+        if (n.edit) {
+          node.log('Deploying OpenWhisk Action: ' + n.namespace + '/' + n.action);
+          node.status({fill:"yellow",shape:"dot",text:"deploying"});
+
+          var params = n.params.filter(function (param) {
+            return param.key !== '';
+          })
+
+          var action = { 
+            exec: { kind: 'nodejs', code: n.func },
+            parameters: params
+          };
+
+          this.service.client.actions.update({actionName: n.action, namespace: n.namespace, action: action})
+            .then(function (res) {
+              node.status({});
+            })
+            .catch(function (err) {
+              node.status({fill:"red", shape:"dot", text:"deploy failed"});
+              node.error(err.message, err.message);
+            });
+        }
+
         this.on('input', function(msg) {
             var namespace = node.namespace || msg.namespace;
             var action = node.action || msg.action;
@@ -124,23 +190,22 @@ module.exports = function(RED) {
             }
 
             node.status({fill:"yellow",shape:"dot",text:"running"});
-            sendRequest(this.service,"/namespaces/"+namespace+"/actions/"+action,{method:"POST",body:msg.payload,json:true,qs:{blocking:"true"}},function(err,res) {
-                if (err) {
-                    node.status({fill:"red",shape:"dot",text:"failed"});
-                    if (err === 404) {
-                        err = new Error("OpenWhisk action "+namespace+"/"+action+" not found");
-                    }
-                    return node.error(err,msg);
-                } else if (res.error) {
-                    node.status({fill:"red",shape:"dot",text:"failed"});
-                    return node.error(res.error,msg);
-                } else {
-                    msg.data = res;
-                    msg.payload = res.response.result;
-                    node.status({});
-                    node.send(msg);
-                }
-            })
+
+            var params = msg.payload;
+            if (typeof params !== "object") {
+              params = {};
+            }
+            node.service.client.actions.invoke({actionName: action, namespace: namespace, blocking: true, params: params})
+              .then(function (res) {
+                msg.data = res;
+                msg.payload = res.response.result;
+                node.status({});
+                node.send(msg);
+              })
+              .catch(function (err) {
+                node.status({fill:"red", shape:"dot", text:"failed"});
+                node.error(err.message, err.message);
+              });
         })
 
     }
