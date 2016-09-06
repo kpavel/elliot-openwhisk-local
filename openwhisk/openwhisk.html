@@ -31,7 +31,7 @@
 
 <script type="text/x-red" data-template-name="openwhisk-trigger">
 <div class="form-row">
-    <label for="node-input-service><i class="fa fa-cloud"></i> Service</label>
+    <label for="node-input-service"><i class="fa fa-cloud"></i> Service</label>
     <input type="text" id="node-input-service">
 </div>
 <div class="form-row">
@@ -204,7 +204,7 @@ action; any other type is ignored.</p>
             $(".red-ui-editableList li").each(function (idx, li) {
               var key = $(li).find(".params-key").val();
               var value = $(li).find(".params-value").val();
-              params.push({key: key, value: value}); 
+              params.push({key: key, value: value});
             })
             this.params = params;
           } else {
@@ -227,7 +227,7 @@ action; any other type is ignored.</p>
       editor.setOptions({
         readOnly: readOnly,
         highlightActiveLine: !readOnly,
-        highlightGutterLine: !readOnly 
+        highlightGutterLine: !readOnly
       });
       editor.renderer.$cursorLayer.element.style.opacity = readOnly ? 0 : 1;
       makeParametersReadOnly(readOnly);
@@ -242,7 +242,7 @@ action; any other type is ignored.</p>
       $('.action-source').show();
       $(".fa-cog").addClass("fa-spin")
 
-      var url = "openwhisk-action/?action=" + action + "&namespace=" + namespace; 
+      var url = "openwhisk-action/?action=" + action + "&namespace=" + namespace;
       // if the user has defined the service before deploying, send the credentials.
       // otherwise, send the service identifier.
       if (service.credentials && service.credentials.has_key) {
@@ -281,7 +281,7 @@ action; any other type is ignored.</p>
       $('.trigger-source').show();
       $(".fa-cog").addClass("fa-spin")
 
-      var url = "openwhisk-trigger/?trigger=" + action + "&namespace=" + namespace; 
+      var url = "openwhisk-trigger/?trigger=" + action + "&namespace=" + namespace;
       if (service.credentials && service.credentials.has_key) {
         url += "&key=" + service.credentials.key + "&api=" + service.api;
       } else {
@@ -313,7 +313,7 @@ action; any other type is ignored.</p>
       var disabled = data.disabled ? "disabled" : "";
       var template = '<i style="color: #eee; margin-left:15px;" class="fa fa-bars"></i><input class="params-key" style="width: 40%; margin-left: 15px;" '+disabled+' type="text" placeholder="key" value="'+key+'"><input class="params-value" style="width: 40%; margin-left: 15px;" '+disabled+' type="text" placeholder="value" value="'+value+'">';
       $(row).html(template);
-    }; 
+    };
 
     RED.nodes.registerType('openwhisk-action', {
         category: 'function',
@@ -361,7 +361,7 @@ action; any other type is ignored.</p>
           });
 
           // when user swaps back to non-edit mode,
-          // retrieve current action source from openwhisk. 
+          // retrieve current action source from openwhisk.
           // otherwise, take editor out of readonly mode.
           $("#node-input-edit").change(function () {
             var checked = $("#node-input-edit").prop("checked");
@@ -390,8 +390,8 @@ action; any other type is ignored.</p>
                     this.noerr = annot.length;
                 }
             }
-            // if user has decided to allow source modifications, store the 
-            // function definition within the node. otherwise, wipe it out 
+            // if user has decided to allow source modifications, store the
+            // function definition within the node. otherwise, wipe it out
             // so we can retrieve it from the API next time...
             var checked = $("#node-input-edit").prop("checked");
             if (checked) {
@@ -400,7 +400,7 @@ action; any other type is ignored.</p>
               $(".red-ui-editableList li").each(function (idx, li) {
                 var key = $(li).find(".params-key").val();
                 var value = $(li).find(".params-value").val();
-                params.push({key: key, value: value}); 
+                params.push({key: key, value: value});
               })
               this.params = params;
             } else {
