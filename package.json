@@ -2,7 +2,7 @@
     "name": "node-red-node-openwhisk",
     "version": "0.3.0",
     "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk",
-    "license": "Apache",
+    "license": "Apache-2.0",
     "repository": {
         "type": "git",
         "url": "https://github.com/node-red/node-red-node-openwhisk.git"
