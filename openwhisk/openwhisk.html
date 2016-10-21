@@ -36,7 +36,8 @@
 </div>
 <div class="form-row">
     <label for="node-input-namespace"><i class="fa fa-users"></i> Namespace</label>
-    <input type="text" id="node-input-namespace">
+    <select id="node-input-namespace">
+    </select>
 </div>
 <div class="form-row">
     <label for="node-input-trigger"><i class="fa fa-cog"></i> Trigger</label>
@@ -66,10 +67,13 @@
     <label for="node-input-namespace"><i class="fa fa-cloud"></i> Service</label>
     <input type="text" id="node-input-service">
 </div>
+
 <div class="form-row">
     <label for="node-input-namespace"><i class="fa fa-users"></i> Namespace</label>
-    <input type="text" id="node-input-namespace">
+    <select id="node-input-namespace">
+    </select>
 </div>
+
 <div class="form-row">
     <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
     <input type="text"  style="width: 45%" id="node-input-action">
@@ -169,7 +173,9 @@ action; any other type is ignored.</p>
           });
 
           this.params.forEach(function (param) {
-            $("#node-input-parameters-container").editableList('addItem', param);
+              if (param.key) {
+                  $("#node-input-parameters-container").editableList('addItem', param);
+              }
           });
 
           if (this.edit) {
@@ -178,7 +184,17 @@ action; any other type is ignored.</p>
               retrieveTriggerSource(this);
           }
 
+          if (this.service) {
+              retrieveNamespaceListTrigger(this);
+          }
+
           var that = this;
+
+          $('#node-input-service').change(function () {
+              that.namespaces = undefined;
+              retrieveNamespaceListTrigger(that);
+          });
+
           $('#node-input-trigger').keyup(function () {
             clearTimeout(that.timeout);
             that.timeout = setTimeout(function () {
@@ -231,6 +247,63 @@ action; any other type is ignored.</p>
       });
       editor.renderer.$cursorLayer.element.style.opacity = readOnly ? 0 : 1;
       makeParametersReadOnly(readOnly);
+    }
+
+    function retrieveNamespaceListAction(node) {
+        retrieveNamespaceList(node, retrieveActionSource)
+    }
+
+    function retrieveNamespaceListTrigger(node) {
+        retrieveNamespaceList(node, retrieveTriggerSource)
+    }
+
+    function retrieveNamespaceList(node, retrieveSource) {
+        // Bail if there is no value set for service.
+        var service = RED.nodes.node($("#node-input-service").val());
+        if (!service) return;
+
+        if (node.namespaces && node.namespaces.length) {
+            drawNamespaceList(node, retrieveSource);
+            return;
+        }
+
+        var url = "openwhisk-namespace-list/";
+
+        // if the user has defined the service before deploying, send the credentials.
+        // otherwise, send the service identifier.
+        if (service.credentials && service.credentials.has_key) {
+            url += "?key=" + service.credentials.key + "&api=" + service.api;
+        } else {
+            url += "?id=" + service.id;
+        }
+
+        $.getJSON(url)
+            .done(function (result) {
+                node.namespaces = result;
+                drawNamespaceList(node, retrieveSource);
+            });
+    }
+
+    function drawNamespaceList (node, retrieveSource) {
+        var namespaceDiv = $('#node-input-namespace');
+        if (!namespaceDiv || !node.namespaces) return;
+        // empty the list before populating it
+        namespaceDiv.empty();
+        // populate the list
+        node.namespaces.forEach(function (namespace) {
+            namespaceDiv.append($('<option>', {value: namespace, text: namespace}));
+        });
+        // if namespace is not set use the first item in the list
+        if (node.namespace) {
+            namespaceDiv.val(node.namespace);
+        }
+        // when a new selection is made update the state
+        namespaceDiv.change(function (e, d) {
+            var selected = $('#node-input-namespace option').filter(':selected').text();;
+            if (node.namespace === selected) return;
+            node.namespace = selected;
+            retrieveSource(node);
+        });
     }
 
     function retrieveActionSource(node) {
@@ -332,13 +405,24 @@ action; any other type is ignored.</p>
         icon: "openwhisk.png",
         paletteLabel:"OpenWhisk",
         oneditprepare: function () {
+          // create editor dom element
+          this.editor = RED.editor.createEditor({
+            id: 'node-input-func-editor',
+            mode: 'ace/mode/javascript',
+            value: $("#node-input-func").val()
+          });
+
+          makeActionReadOnly(this.editor, true);
+
           $("#node-input-parameters-container").editableList({
             removable: true,
             addItem: addItem
           });
 
           this.params.forEach(function (param) {
-            $("#node-input-parameters-container").editableList('addItem', param);
+              if (param.key) {
+                  $("#node-input-parameters-container").editableList('addItem', param);
+              }
           });
           // if node configuration includes custom action source,
           // show the editor panel straight away.
@@ -350,7 +434,17 @@ action; any other type is ignored.</p>
               retrieveActionSource(this);
           }
 
+          if (this.service) {
+              retrieveNamespaceListAction(this);
+          }
+
           var that = this;
+
+          $('#node-input-service').change(function () {
+              that.namespaces = undefined;
+              retrieveNamespaceListAction(that);
+          });
+
           // whenever action name changes, update Action source.
           // debounce events to half a second.
           $('#node-input-action').keyup(function () {
@@ -372,13 +466,6 @@ action; any other type is ignored.</p>
               retrieveActionSource(that);
             }
           });
-
-          this.editor = RED.editor.createEditor({
-            id: 'node-input-func-editor',
-            mode: 'ace/mode/javascript',
-            value: $("#node-input-func").val()
-          });
-          makeActionReadOnly(this.editor, true);
         },
         oneditsave: function () {
             var annot = this.editor.getSession().getAnnotations();
