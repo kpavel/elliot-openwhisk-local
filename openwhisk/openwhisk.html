@@ -201,7 +201,7 @@ action; any other type is ignored.</p>
           var checked = $("#node-input-edit").prop("checked");
           if (checked) {
             var params = [];
-            $(".red-ui-editableList li").each(function (idx, li) {
+            $(".node-input-parameters-container-row li").each(function (idx, li) {
               var key = $(li).find(".params-key").val();
               var value = $(li).find(".params-value").val();
               params.push({key: key, value: value});
@@ -215,11 +215,11 @@ action; any other type is ignored.</p>
     });
 
     function makeParametersReadOnly(readOnly) {
-      $(".red-ui-editableList input").prop('disabled', readOnly);
+      $(".node-input-parameters-container-row input").prop('disabled', readOnly);
       if (readOnly) {
-        $(".red-ui-editableList .editor-button").hide();
+        $(".node-input-parameters-container-row .editor-button").hide();
       } else {
-        $(".red-ui-editableList .editor-button").show();
+        $(".node-input-parameters-container-row .editor-button").show();
       }
     }
 
@@ -397,7 +397,7 @@ action; any other type is ignored.</p>
             if (checked) {
               $("#node-input-func").val(this.editor.getValue());
               var params = []
-              $(".red-ui-editableList li").each(function (idx, li) {
+              $(".node-input-parameters-container-row li").each(function (idx, li) {
                 var key = $(li).find(".params-key").val();
                 var value = $(li).find(".params-value").val();
                 params.push({key: key, value: value});
