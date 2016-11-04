@@ -5,7 +5,7 @@
     "license": "Apache-2.0",
     "repository": {
         "type": "git",
-        "url": "https://github.com/node-red/node-red-node-openwhisk.git"
+        "url": "https://github.com/ibmets/node-red-node-openwhisk.git"
     },
     "keywords": [
         "node-red",
