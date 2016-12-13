@@ -56,6 +56,24 @@ module.exports = function(RED) {
         .catch(function (err) { console.log(err); res.json({parameters: []});});
     });
 
+    // API to retrieve OW Trigger definition at runtime.
+    RED.httpAdmin.get('/openwhisk-namespace-list', function (req, res) {
+      if (!req.query.id && !req.query.key) {
+        return res.json("");
+      }
+
+      var client;
+
+      if (req.query.id) {
+        client = RED.nodes.getNode(req.query.id).client;
+      } else {
+        client = openwhisk({api: req.query.api, api_key: req.query.key});
+      }
+
+      client.namespaces.list()
+        .then(function (result) { res.json(result) })
+        .catch(function (err) { console.log(err); res.json({parameters: []});});
+    });
 
     function OpenWhiskService(n){
         RED.nodes.createNode(this,n);
@@ -98,7 +116,7 @@ module.exports = function(RED) {
           node.status({fill:"yellow",shape:"dot",text:"deploying"});
 
           var params = n.params.filter(function (param) {
-            return param.key !== '';
+            return param.key && param.key !== '';
           })
 
           var trigger = { 
@@ -161,7 +179,7 @@ module.exports = function(RED) {
           node.status({fill:"yellow",shape:"dot",text:"deploying"});
 
           var params = n.params.filter(function (param) {
-            return param.key !== '';
+            return param.key && param.key !== '';
           })
 
           var action = { 
