@@ -18,6 +18,11 @@ module.exports = function(RED) {
     "use strict";
     var openwhisk = require('openwhisk');
 
+    var http = require("follow-redirects").http;
+    var https = require("follow-redirects").https;
+    var urllib = require("url");
+    var when = require('when');
+
     // API to retrieve OW Action source code at runtime.
     RED.httpAdmin.get('/openwhisk-action', function (req, res) {
       if (!req.query.id && !req.query.key) {
@@ -75,6 +80,27 @@ module.exports = function(RED) {
         .catch(function (err) { console.log(err); res.json({parameters: []});});
     });
 
+    function OpenWhiskLocalClient(){
+        this.actions = {
+          invoke: function(req){
+            return when.promise(function(resolve,reject) {
+              request("POST", req.params, "http://" + req.actionName + ":8080/run").then(function(result){
+                resolve({response: {result: result}});
+              });
+            });
+          },
+          get: function(req){     //currently do nothing
+            return when.promise(function(resolve,reject) { resolve("")});
+          }
+        };
+
+        this.namespaces = {
+          list: function(){       //currently do nothing
+            return when.promise(function(resolve,reject) { resolve(["local"]) });
+          }
+        };
+    }
+
     function OpenWhiskService(n){
         RED.nodes.createNode(this,n);
         this.name = n.name;
@@ -82,6 +108,13 @@ module.exports = function(RED) {
         if (/\/$/.test(this.api)) {
             this.api = this.api.substring(this.api.length-1);
         }
+
+        if(n.locally){
+            this.client = new OpenWhiskLocalClient();
+            this.valid = true;
+            return;
+        }
+
         this.valid = /^https?:\/\/.*/.test(this.api) && this.credentials.key;
         if (!this.valid) {
             if (!this.credentials.key) {
@@ -213,6 +246,7 @@ module.exports = function(RED) {
             if (typeof params !== "object") {
               params = {};
             }
+
             node.service.client.actions.invoke({actionName: action, namespace: namespace, blocking: true, params: params})
               .then(function (res) {
                 msg.data = res;
@@ -228,4 +262,31 @@ module.exports = function(RED) {
 
     }
     RED.nodes.registerType("openwhisk-action",OpenWhiskAction);
+
+    function request(method, payload, url) {
+      var opts = urllib.parse(url);
+      opts.method = method;
+      opts.headers = {"Content-Type": "application/json", "Accept": "application/json"};
+
+      return when.promise(function(resolve,reject) {
+        var req = ((/^https/.test(url))?https:http).request(opts,function(res) {
+          var result = "";
+          res.on('data',function(chunk) {
+            result += chunk;
+          });
+
+          res.on('end',function() {
+            try {
+              result = JSON.parse(result);
+            }catch(e) { reject(e) }
+
+            resolve(result);
+          });
+        });
+
+        req.on('error',function(err) { reject(err) });
+        req.write(JSON.stringify(payload));
+        req.end();
+      });
+    }
 }

@@ -16,10 +16,14 @@
 
 <script type="text/x-red" data-template-name="openwhisk-service">
 <div class="form-row">
+    <label for="node-config-input-locally" style="width: 75px;">Run locally</label>
+    <input type="checkbox" id="node-config-input-locally" style="width: 14px; margin-top: 0px;">
+</div>
+<div class="form-row node-config-input-credentials-row">
     <label for="node-config-input-api"><i class="fa fa-cloud"></i> API URL</label>
     <input type="text" id="node-config-input-api">
 </div>
-<div class="form-row">
+<div class="form-row node-config-input-credentials-row">
     <label for="node-config-input-key"><i class="fa fa-lock"></i> Auth Key</label>
     <input type="password" id="node-config-input-key">
 </div>
@@ -138,12 +142,22 @@ action; any other type is ignored.</p>
         defaults: {
             name: { value: "" },
             api: { value: "https://openwhisk.ng.bluemix.net/api/v1"},
+            locally: { value: true }
         },
         credentials: {
             key: {type:"password"}
         },
         label: function() {
             return this.name || this.namespace ||  "OpenWhisk Service";
+        },
+        oneditprepare: function() {
+            $("#node-config-input-locally").change(function() {
+                if ($(this).is(":checked")) {
+                    $(".node-config-input-credentials-row").hide();
+                } else {
+                    $(".node-config-input-credentials-row").show();
+                }
+                                                                                    });
         }
     });
 
