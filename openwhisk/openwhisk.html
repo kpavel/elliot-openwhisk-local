@@ -72,13 +72,13 @@
     <input type="text" id="node-input-service">
 </div>
 
-<div class="form-row">
+<div class="form-row action-namespace">
     <label for="node-input-namespace"><i class="fa fa-users"></i> Namespace</label>
     <select id="node-input-namespace">
     </select>
 </div>
 
-<div class="form-row">
+<div class="form-row action-edit">
     <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
     <input type="text"  style="width: 45%" id="node-input-action">
     <div style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
@@ -275,6 +275,16 @@ action; any other type is ignored.</p>
         // Bail if there is no value set for service.
         var service = RED.nodes.node($("#node-input-service").val());
         if (!service) return;
+
+        // if service node is of local type don't show edit/action and namespace panels
+        if (service.locally){
+              $('.action-namespace').hide();
+              $('.action-edit').hide();
+              return;
+        }else{
+              $('.action-namespace').show();
+              $('.action-edit').show();
+        }
 
         if (node.namespaces && node.namespaces.length) {
             drawNamespaceList(node, retrieveSource);
