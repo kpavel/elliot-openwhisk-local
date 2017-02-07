@@ -2,6 +2,7 @@ node-red-node-openwhisk
 =======================
 
 A set of Node-RED nodes for interacting with IBM Bluemix OpenWhisk.
+Also includes a 'local' mode, assuming that each action is running in a local container, accessible on the network by the action name (i.e., `http://<action-name>:8080/run`). One way to achieve this is to run both Node-RED and the individual action containers as part of a single docker-compose deployment.
 
 ## Install
 
