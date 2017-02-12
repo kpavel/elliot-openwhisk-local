@@ -84,7 +84,7 @@ module.exports = function(RED) {
         this.actions = {
           invoke: function(req){
             return when.promise(function(resolve,reject) {
-              request("POST", req.params, "http://" + req.actionName + ":8080/run").then(function(result){
+              request("POST", {"value": req.params}, "http://" + req.actionName + ":8080/run").then(function(result){
                 resolve({response: {result: result}});
               });
             });
