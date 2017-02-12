@@ -78,10 +78,10 @@
     </select>
 </div>
 
-<div class="form-row action-edit">
+<div class="form-row">
     <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
     <input type="text"  style="width: 45%" id="node-input-action">
-    <div style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
+    <div class="action-edit" style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
       <label for="node-input-edit" style="width: 75px;">Allow Edits</label>
       <input type="checkbox" id="node-input-edit" style="width: 14px; margin-top: 0px;">
   </div>
@@ -280,6 +280,7 @@ action; any other type is ignored.</p>
         if (service.locally){
               $('.action-namespace').hide();
               $('.action-edit').hide();
+              $('.action-source').hide();
               return;
         }else{
               $('.action-namespace').show();
@@ -335,7 +336,7 @@ action; any other type is ignored.</p>
       var namespace = $('#node-input-namespace').val();
       var service = RED.nodes.node($("#node-input-service").val());
 
-      if (!action || !namespace || !service) return;
+      if (!action || !namespace || !service || service.locally) return;
       $('.action-source').show();
       $(".fa-cog").addClass("fa-spin")
 
