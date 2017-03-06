@@ -16,17 +16,33 @@
 
 <script type="text/x-red" data-template-name="openwhisk-service">
 <div class="form-row">
-    <label for="node-config-input-locally" style="width: 75px;">Run locally</label>
-    <input type="checkbox" id="node-config-input-locally" style="width: 14px; margin-top: 0px;">
-</div>
-<div class="form-row node-config-input-credentials-row">
     <label for="node-config-input-api"><i class="fa fa-cloud"></i> API URL</label>
     <input type="text" id="node-config-input-api">
 </div>
-<div class="form-row node-config-input-credentials-row">
+<div class="form-row">
     <label for="node-config-input-key"><i class="fa fa-lock"></i> Auth Key</label>
     <input type="password" id="node-config-input-key">
 </div>
+<div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
+    <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
+</div>
+</script>
+
+<script type="text/x-red" data-template-name="openwhisk-localservice">
+<div class="form-row">
+    <label for="node-config-input-dockerurl"><i class="fa fa-cloud"></i> DOCKER URL</label>
+    <input type="text" id="node-config-input-dockerurl">
+</div>
+
+<div class="form-row">
+        <label for="node-input-resolution"><i class="fa fa-envelope"></i> Resolution</label>
+        <select type="text" id="node-input-resolution">
+            <option value="ip">IP</option>
+            <option value="dns">DNS</option>
+        </select>
+</div>
+
 <div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
     <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
@@ -72,16 +88,26 @@
     <input type="text" id="node-input-service">
 </div>
 
-<div class="form-row action-namespace">
+<div class="form-row">
     <label for="node-input-namespace"><i class="fa fa-users"></i> Namespace</label>
     <select id="node-input-namespace">
     </select>
 </div>
 
 <div class="form-row">
+    <label for="node-input-locally" style="width: 75px;"> Run locally</label>
+    <input type="checkbox" id="node-input-locally" style="width: 14px; margin-top: 0px;">
+</div>
+
+<div class="form-row action-localservice">
+    <label for="node-input-localservice"><i class="fa fa-cloud"></i> Runtime</label>
+    <input type="text" id="node-input-localservice">
+</div>
+
+<div class="form-row">
     <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
     <input type="text"  style="width: 45%" id="node-input-action">
-    <div class="action-edit" style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
+    <div style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
       <label for="node-input-edit" style="width: 75px;">Allow Edits</label>
       <input type="checkbox" id="node-input-edit" style="width: 14px; margin-top: 0px;">
   </div>
@@ -114,6 +140,7 @@
 </script>
 
 <script type="text/x-red" data-help-name="openwhisk-service"></script>
+<script type="text/x-red" data-help-name="openwhisk-localservice"></script>
 
 <script type="text/x-red" data-help-name="openwhisk-trigger">
 <p>Invoke an OpenWhisk trigger.</p>
@@ -142,22 +169,25 @@ action; any other type is ignored.</p>
         defaults: {
             name: { value: "" },
             api: { value: "https://openwhisk.ng.bluemix.net/api/v1"},
-            locally: { value: true }
         },
         credentials: {
             key: {type:"password"}
         },
         label: function() {
             return this.name || this.namespace ||  "OpenWhisk Service";
+        }
+    });
+
+
+    RED.nodes.registerType('openwhisk-localservice', {
+        category: 'config',
+        defaults: {
+            name: { value: "" },
+            resolution: {value: "IP", required:true},
+            dockerurl: { value: "http://hslt1:2375"},
         },
-        oneditprepare: function() {
-            $("#node-config-input-locally").change(function() {
-                if ($(this).is(":checked")) {
-                    $(".node-config-input-credentials-row").hide();
-                } else {
-                    $(".node-config-input-credentials-row").show();
-                }
-                                                                                    });
+        label: function() {
+            return this.name || this.namespace ||  "Local Docker";
         }
     });
 
@@ -276,18 +306,6 @@ action; any other type is ignored.</p>
         var service = RED.nodes.node($("#node-input-service").val());
         if (!service) return;
 
-        // if service node is of local type don't show edit/action and namespace panels
-        if (service.locally){
-              $('.action-namespace').hide();
-              $('.action-edit').hide();
-              $('.action-source').hide();
-              node.namespace = "local";
-              return;
-        }else{
-              $('.action-namespace').show();
-              $('.action-edit').show();
-        }
-
         if (node.namespaces && node.namespaces.length) {
             drawNamespaceList(node, retrieveSource);
             return;
@@ -337,7 +355,7 @@ action; any other type is ignored.</p>
       var namespace = $('#node-input-namespace').val();
       var service = RED.nodes.node($("#node-input-service").val());
 
-      if (!action || !namespace || !service || service.locally) return;
+      if (!action || !namespace || !service) return;
       $('.action-source').show();
       $(".fa-cog").addClass("fa-spin")
 
@@ -366,6 +384,7 @@ action; any other type is ignored.</p>
           makeActionReadOnly(node.editor, true);
         })
         .fail(function () {
+            // alert("failed to convert source to json");
           $('.action-source').hide();
           $(".fa-cog").removeClass("fa-spin")
         });
@@ -423,7 +442,9 @@ action; any other type is ignored.</p>
             action: { value: "" },
             params: { value: [{key: "", value: "", disabled: true}] },
             service: { type:"openwhisk-service", required: true },
-            edit: { value: false }
+            localservice: { type:"openwhisk-localservice", required: false },
+            edit: { value: false },
+            locally: { value: false }
         },
         inputs: 1,
         outputs: 1,
@@ -460,6 +481,12 @@ action; any other type is ignored.</p>
               retrieveActionSource(this);
           }
 
+          if (this.locally) {
+              $('.action-localservice').show();
+          // otherwise, if we have the correct parameters, retrieve it
+          // from the platform.
+          }
+
           if (this.service) {
               retrieveNamespaceListAction(this);
           }
@@ -490,6 +517,15 @@ action; any other type is ignored.</p>
               that.editor.focus();
             } else {
               retrieveActionSource(that);
+            }
+          });
+
+          $("#node-input-locally").change(function () {
+            var checked = $("#node-input-locally").prop("checked");
+            if (checked) {
+              $('.action-localservice').show();
+            } else {
+              $('.action-localservice').hide();
             }
           });
         },
