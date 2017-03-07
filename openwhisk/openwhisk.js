@@ -38,7 +38,12 @@ module.exports = function(RED) {
       }
 
       client.actions.get({actionName: req.query.action, namespace: req.query.namespace})
-        .then(function (result) { console.log("action get result: " + result);res.json(result) })
+        .then(function (result) { 
+          console.log("action get result: " + JSON.stringify(result));
+          if(result.exec.kind == "java"){
+            delete result.exec.jar;
+          }
+          res.json(result) })
         .catch(function (err) { console.log("action get error: " + err); res.json({exec: {code: ""}});});
     });
 
@@ -80,20 +85,19 @@ module.exports = function(RED) {
         .catch(function (err) { console.log(err); res.json({parameters: []});});
     });
 
-    function OpenWhiskLocalClient(node){
-      var Docker = require('dockerode');
-      var docker = new Docker({ host: node.dockerurl, port: 2375});
+    function OpenWhiskLocalClient(node, docker){
+      this.docker = docker;
 
+      var that = this;
       this.cleanup = function(){
           // return when.promise(function(resolve,reject) {
             var opts= { "filters": { "label": [ "node=" + node.id ] } };
-            console.log("in cleanup with docker url: " + node.dockerurl + ", opts: " + JSON.stringify(opts));
-            docker.listContainers(opts, function (err, containers) {
-              console.log("listed containers: " + containers.length);
+            that.docker.listContainers(opts, function (err, containers) {
+              console.log("listed containers: " + containers);
               if(containers.length > 0){
                 containers.forEach(function (containerInfo) {
                   console.log("reduced with containerInfo " + JSON.stringify(containerInfo));
-                  var container = docker.getContainer(containerInfo.Id);
+                  var container = that.docker.getContainer(containerInfo.Id);
                   console.log("got container " + JSON.stringify(container));
                   container.stop(function(data){
                       console.log("container stopped, data " + data);
@@ -101,8 +105,6 @@ module.exports = function(RED) {
                         console.log("container removed, data: " + data);
                       });
                   });
-                  
-                  
                 }
               )}              
             });
@@ -122,18 +124,18 @@ module.exports = function(RED) {
       this.create = function(req){
         return when.promise(function(resolve,reject) {
 
-          //protocol http vs https is automatically detected
-          var docker = new Docker({ host: req.docker, port: 2375});
+          // //protocol http vs https is automatically detected
+          // var docker = new Docker({ host: req.docker, port: 2375});
 
           console.log("----------process.cwd(); " + process.cwd());
-          console.log("req.docker: " + req.docker);
+          console.log("docker: " + that.docker);
 
           var os = require("os");
           var redhostname = os.hostname();
           console.log("++++++++++++hostname: " + redhostname);
 
           // get node-red container info
-          var container = docker.getContainer(redhostname);
+          var container = that.docker.getContainer(redhostname);
           // console.log("++++++++++++NODERED container: " + JSON.stringify(container));
 
           container.inspect(function (err, containerInfo) {
@@ -148,16 +150,16 @@ module.exports = function(RED) {
 
               var imageName = req.exec.kind + "action";
               console.log("----------getting docker image: " + JSON.stringify(imageName));
-              var image = docker.getImage(imageName);
+              var image = that.docker.getImage(imageName);
               console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
 
-              docker.createContainer({Image: imageName, Labels: {"action": req.actionName, "node": node.id}}, function (err, container) {
+              that.docker.createContainer({Image: imageName, Labels: {"action": req.actionName, "node": node.id}}, function (err, container) {
                   if(err){
                     console.log("err: " + err);
                     console.log("jErr: " + JSON.stringify(err));
                     reject(err);
                   }
-                  var network = docker.getNetwork(nwid);
+                  var network = that.docker.getNetwork(nwid);
                   console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
                   network.connect({Container: container.id}, function (err, data) {
                       console.log("Network connected: " + JSON.stringify(data));
@@ -246,10 +248,28 @@ module.exports = function(RED) {
             this.dockerurl = this.dockerurl.substring(this.dockerurl.length-1);
         }
 
-        this.client = new OpenWhiskLocalClient(this);
-        console.log("CLEANUP !!!");
-        this.client.cleanup();
-        console.log("CLEANUP Finished ????");
+        this.dockerPort = urllib.parse(node.dockerurl).port;
+
+        if(!this.dockerurl || !this.dockerPort){
+          node.error("Invalid docker url, example of valid url: http://mydockerhost:2375");
+          return;
+        }
+
+        var Docker = require('dockerode');
+        var docker = new Docker({ host: node.dockerurl, port: node.dockerPort});
+        docker.version(function(err, res){
+          if(err){
+            node.status({fill:"red", shape:"dot", text:err.message});
+            node.error(err.message, err.message);
+            return;
+          }else{
+            node.client = new OpenWhiskLocalClient(node, docker);
+            console.log("CLEANUP !!!");
+            
+            node.client.cleanup();
+            console.log("CLEANUP Finished ????");
+          }
+        });
     }
 
     RED.nodes.registerType("openwhisk-localservice",OpenWhiskLocalService);
@@ -322,7 +342,8 @@ module.exports = function(RED) {
         this.action = n.action;
         this.service = RED.nodes.getNode(n.service);
         this.localservice = RED.nodes.getNode(n.localservice);
-
+        this.locally = n.locally;
+        
         if (!this.service || !this.service.valid) {
             return;
         }
@@ -352,23 +373,28 @@ module.exports = function(RED) {
             });
         }
 
-        if(this.localservice && node.action && node.namespace){
+        if(this.localservice && node.action && node.namespace && node.locally){
             console.log("Getting action: " + node.action);
             this.service.client.actions.get({actionName: node.action, namespace: node.namespace}).then(function (result) { 
               console.log("Got action: " + JSON.stringify(result));
+
+              if(!node.localservice.client){
+                throw new Error("local docker client not initilized");
+              }
 
               node.localservice.client.create({actionName: node.action, exec: result.exec, docker: node.localservice.dockerurl})
                 .then(function (result) {
                   console.log("container create result: " + result);
                   node.actioncontainer = result;
+                  node.status({});
                 })
                 .catch(function (err) {
-                  node.status({fill:"red", shape:"dot", text:"create docker container failed"});
+                  node.status({fill:"red", shape:"dot", text:err.message});
                   node.error(err.message, err.message);
                 });
             })
             .catch(function (err) {
-              node.status({fill:"red", shape:"dot", text:"action get failed"});
+              node.status({fill:"red", shape:"dot", text:err.message});
               node.error(err.message, err.message);
             });
         }

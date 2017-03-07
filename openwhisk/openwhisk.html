@@ -370,8 +370,7 @@ action; any other type is ignored.</p>
 
       $.getJSON(url)
         .done(function (result) {
-          node.editor.setValue(result.exec.code);
-          node.editor.clearSelection();
+          
           $("#node-input-edit").prop("checked", false);
           $(".fa-cog").removeClass("fa-spin")
           $("#node-input-parameters-container").editableList('empty');
@@ -381,10 +380,19 @@ action; any other type is ignored.</p>
             param.disabled = true;
             $("#node-input-parameters-container").editableList('addItem', param);
           });
+
+          if(result.exec.kind != "js"){
+              $("#node-input-edit").hide();
+              $('.action-source').hide();
+              $(".fa-cog").removeClass("fa-spin");
+              return;
+          }
+
+          node.editor.setValue(result.exec.code);
+          node.editor.clearSelection();
           makeActionReadOnly(node.editor, true);
         })
         .fail(function () {
-            // alert("failed to convert source to json");
           $('.action-source').hide();
           $(".fa-cog").removeClass("fa-spin")
         });
