@@ -381,7 +381,7 @@ action; any other type is ignored.</p>
             $("#node-input-parameters-container").editableList('addItem', param);
           });
 
-          if(result.exec.kind != "js"){
+          if(result.exec.kind != "nodejs"){
               $("#node-input-edit").hide();
               $('.action-source').hide();
               $(".fa-cog").removeClass("fa-spin");

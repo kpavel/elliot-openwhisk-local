@@ -149,6 +149,9 @@ module.exports = function(RED) {
               })[0];
 
               var imageName = req.exec.kind + "action";
+              // if(req.exec.kind != "java"){
+              //   imageName="nodejsaction";
+              // }
               console.log("----------getting docker image: " + JSON.stringify(imageName));
               var image = that.docker.getImage(imageName);
               console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
@@ -179,30 +182,32 @@ module.exports = function(RED) {
 
                               console.log(req.actionName + " address: " +  address);
 
-                              var init = function(){
+                                var payload;
+                                if(req.exec.kind == "java"){
                                   var main = req.exec.main;
                                   var jar = req.exec.jar;
-                                  request("POST", {value: { main: "Hello", jar: jar}}, "http://" + address + ":8080/init").then(function(result){
-                                      console.log("init result: " + JSON.stringify(result));  //TODO: add validation that result is ok
-                                      resolve(address);
-                                  });
-                              };
-                              var waitToStart = function(){
-                                  request("POST", {value: {x:1}}, "http://" + address + ":8080/run").then(function(result){
+                                  payload = {value: { main: "Hello", jar: jar}};
+                                }else{
+                                  payload = {value: { main: "main", code: req.exec.code}};
+                                }
+
+                              var waitToInit = function(){
+                                  request("POST", payload, "http://" + address + ":8080/init").then(function(result){
                                       console.log("result: " + result);
-                                      if(JSON.stringify(result).indexOf("uninitialized") == -1){
-                                        setTimeout(waitToStart, 100);
+                                      if(result != '{"OK":true}'){
+                                        console.log(result + "!=" + '{"OK":true}');
+                                        setTimeout(waitToInit, 100);
                                       }else{
-                                        console.log("Container can be inited!");
-                                        init();
+                                        console.log("Container inited!");
+                                        resolve(address);
                                       }
                                   }).catch(function (err) {
                                     console.log("error: " + err);
-                                    setTimeout(waitToStart, 100);
+                                    setTimeout(waitToInit, 100);
                                   });
                               };
 
-                              waitToStart();
+                              waitToInit();
                           });
                       });
                   });
@@ -256,7 +261,8 @@ module.exports = function(RED) {
         }
 
         var Docker = require('dockerode');
-        var docker = new Docker({ host: node.dockerurl, port: node.dockerPort});
+        // var docker = new Docker({ host: node.dockerurl, port: node.dockerPort});
+        var docker = new Docker({socketPath: '/var/run/docker.sock'});
         docker.version(function(err, res){
           if(err){
             node.status({fill:"red", shape:"dot", text:err.message});
@@ -343,7 +349,7 @@ module.exports = function(RED) {
         this.service = RED.nodes.getNode(n.service);
         this.localservice = RED.nodes.getNode(n.localservice);
         this.locally = n.locally;
-        
+
         if (!this.service || !this.service.valid) {
             return;
         }
