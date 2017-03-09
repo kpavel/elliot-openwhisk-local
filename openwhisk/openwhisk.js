@@ -23,6 +23,44 @@ module.exports = function(RED) {
     var urllib = require("url");
     var when = require('when');
 
+/////////////////////////////////////////////////////////////
+// PrefixStream, needed to make prefixes in container logs
+/////////////////////////////////////////////////////////////
+    var util    = require('util');
+    var stream  = require('stream');
+
+    var PassThrough = stream.PassThrough ||
+      require('readable-stream').PassThrough;
+
+    var duplex  = require('duplexer');
+    var split   = require('split');
+    var through = require('through');
+
+    function PrefixStream (prefix) {
+      if ( ! (this instanceof PrefixStream)) {
+        return new PrefixStream(prefix);
+      }
+
+      prefix = prefix || '';
+
+      this.inStream   = new PassThrough();
+      this.outStream  = new PassThrough();
+
+      var tr = through(function(line){
+        line = util.format('%s%s\n', prefix, line);
+        this.queue(line);
+      });
+
+      this.inStream
+        .pipe(split())
+        .pipe(tr)
+        .pipe(this.outStream);
+
+      return duplex(this.inStream, this.outStream);
+    };
+
+////////////////////////////////////////////////////////////////////////////////////
+
     // API to retrieve OW Action source code at runtime.
     RED.httpAdmin.get('/openwhisk-action', function (req, res) {
       if (!req.query.id && !req.query.key) {
@@ -159,6 +197,7 @@ module.exports = function(RED) {
                     console.log("jErr: " + JSON.stringify(err));
                     reject(err);
                   }
+
                   var network = that.docker.getNetwork(nwid);
                   console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
                   network.connect({Container: container.id}, function (err, data) {
@@ -169,6 +208,18 @@ module.exports = function(RED) {
                           console.log("Container started: " + JSON.stringify(data));
 
                           container.inspect(function (err, containerInfo) {
+
+                            // console.log("Container containerInfo: " + JSON.stringify(containerInfo));
+
+                            container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
+                              stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
+                            });
+                            // container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
+                            //     //dockerode may demultiplex attach streams for you :)
+                            //     container.modem.demuxStream(stream, process.stdout, process.stderr);
+                            // });
+
+
                               console.log("node.resolution: " + node.resolution);
 
                               //by default is by IP
