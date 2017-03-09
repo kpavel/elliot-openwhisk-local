@@ -30,8 +30,17 @@
 </script>
 
 <script type="text/x-red" data-template-name="openwhisk-localservice">
+
 <div class="form-row">
-    <label for="node-config-input-dockerurl"><i class="fa fa-cloud"></i> DOCKER URL</label>
+    <label for="node-config-input-docker"><i class="fa fa-cloud"></i> Docker</label>
+    <select type="text" id="node-config-input-docker">
+        <option value="local">Docker engine on localhost</option>
+        <option value="url">Remote docker API</option>
+    </select>
+</div>
+
+<div class="form-row dockerurl" >
+    <label for="node-config-input-dockerurl"><i class="fa fa-cloud"></i> Url</label>
     <input type="text" id="node-config-input-dockerurl">
 </div>
 
@@ -94,13 +103,21 @@
     </select>
 </div>
 
-<div class="form-row">
+<!--<div class="form-row">
     <label for="node-input-locally" style="width: 75px;"> Run locally</label>
     <input type="checkbox" id="node-input-locally" style="width: 14px; margin-top: 0px;">
+</div>-->
+
+<div class="form-row">
+    <label for="node-input-runtime"><i class="fa fa-cloud"></i> Runtime</label>
+    <select type="text" id="node-input-runtime">
+        <option value="service">OpenWhisk service</option>
+        <option value="local">Action containers service</option>
+    </select>
 </div>
 
 <div class="form-row action-localservice">
-    <label for="node-input-localservice"><i class="fa fa-cloud"></i> Runtime</label>
+    <label for="node-input-localservice"><i class="fa fa-cloud"></i> Docker</label>
     <input type="text" id="node-input-localservice">
 </div>
 
@@ -183,12 +200,23 @@ action; any other type is ignored.</p>
         category: 'config',
         defaults: {
             name: { value: "" },
-            resolution: {value: "IP", required:true},
+            resolution: {value: "ip", required:true},
             dockerurl: { value: "http://hslt1:2375"},
+            docker: { value: "local", required: true }
         },
         label: function() {
             return this.name || this.namespace ||  "Local Docker";
-        }
+        },
+        oneditprepare: function () {
+            if (this.docker == "local") {
+                $('.dockerurl').hide();
+            }
+
+            $("#node-config-input-docker").on("change",function() {
+                if (this.value === "local") { $('.dockerurl').hide(); }
+                else { $('.dockerurl').show(); }
+            });
+        },
     });
 
     RED.nodes.registerType('openwhisk-trigger', {
@@ -452,7 +480,7 @@ action; any other type is ignored.</p>
             service: { type:"openwhisk-service", required: true },
             localservice: { type:"openwhisk-localservice", required: false },
             edit: { value: false },
-            locally: { value: false }
+            runtime: { value: "service", required: true }
         },
         inputs: 1,
         outputs: 1,
@@ -489,12 +517,21 @@ action; any other type is ignored.</p>
               retrieveActionSource(this);
           }
 
-          if (this.locally) {
-              $('.action-localservice').show();
-          // otherwise, if we have the correct parameters, retrieve it
-          // from the platform.
+        //   if (this.locally) {
+        //       $('.action-localservice').show();
+        //   // otherwise, if we have the correct parameters, retrieve it
+        //   // from the platform.
+        //   }
+
+          if (this.runtime == "service") {
+                $('.action-localservice').hide();
           }
 
+          $("#node-input-runtime").on("change",function() {
+                if (this.value === "service") { $('.action-localservice').hide(); }
+                else { $('.action-localservice').show(); }
+          });
+            
           if (this.service) {
               retrieveNamespaceListAction(this);
           }

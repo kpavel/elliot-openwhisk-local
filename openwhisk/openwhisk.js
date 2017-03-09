@@ -87,8 +87,8 @@ module.exports = function(RED) {
 
     function OpenWhiskLocalClient(node, docker){
       this.docker = docker;
-
       var that = this;
+
       this.cleanup = function(){
           // return when.promise(function(resolve,reject) {
             var opts= { "filters": { "label": [ "node=" + node.id ] } };
@@ -148,10 +148,7 @@ module.exports = function(RED) {
                   return containerInfo.NetworkSettings.Networks[key].NetworkID;
               })[0];
 
-              var imageName = req.exec.kind + "action";
-              // if(req.exec.kind != "java"){
-              //   imageName="nodejsaction";
-              // }
+              var imageName = req.exec.kind + "action"; //(req.exec.kind).replace(":", "") + "action";
               console.log("----------getting docker image: " + JSON.stringify(imageName));
               var image = that.docker.getImage(imageName);
               console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
@@ -194,7 +191,7 @@ module.exports = function(RED) {
                               var waitToInit = function(){
                                   request("POST", payload, "http://" + address + ":8080/init").then(function(result){
                                       console.log("result: " + result);
-                                      if(result != '{"OK":true}'){
+                                      if(result != '{"OK":true}' && result != "OK"){
                                         console.log(result + "!=" + '{"OK":true}');
                                         setTimeout(waitToInit, 100);
                                       }else{
@@ -248,6 +245,9 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         this.name = n.name;
         this.dockerurl = n.dockerurl;
+        this.resolution = n.resolution;
+        this.docker = n.docker;
+
         var node = this;
         if (/\/$/.test(this.dockerurl)) {
             this.dockerurl = this.dockerurl.substring(this.dockerurl.length-1);
@@ -261,8 +261,16 @@ module.exports = function(RED) {
         }
 
         var Docker = require('dockerode');
-        // var docker = new Docker({ host: node.dockerurl, port: node.dockerPort});
-        var docker = new Docker({socketPath: '/var/run/docker.sock'});
+        var docker;
+        console.info("++++++++==========((((((************ node.docker: " + node.docker + "  ))))))")
+        if(node.docker == "local"){
+          console.log("using socket");
+            docker = new Docker({socketPath: '/var/run/docker.sock'});  
+        }else{
+          console.log("using dockerurl: " + node.dockerurl);
+            docker = new Docker({ host: node.dockerurl, port: node.dockerPort});
+        }
+
         docker.version(function(err, res){
           if(err){
             node.status({fill:"red", shape:"dot", text:err.message});
@@ -348,7 +356,7 @@ module.exports = function(RED) {
         this.action = n.action;
         this.service = RED.nodes.getNode(n.service);
         this.localservice = RED.nodes.getNode(n.localservice);
-        this.locally = n.locally;
+        this.runtime = n.runtime;
 
         if (!this.service || !this.service.valid) {
             return;
@@ -379,7 +387,7 @@ module.exports = function(RED) {
             });
         }
 
-        if(this.localservice && node.action && node.namespace && node.locally){
+        if(this.localservice && node.action && node.namespace && node.runtime == "local"){
             console.log("Getting action: " + node.action);
             this.service.client.actions.get({actionName: node.action, namespace: node.namespace}).then(function (result) { 
               console.log("Got action: " + JSON.stringify(result));
