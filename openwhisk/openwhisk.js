@@ -299,9 +299,12 @@ module.exports = function(RED) {
                       console.log("jErr: " + JSON.stringify(err));
                       reject(err);
                   }
-                  console.log("image " + imageName + " pulled" + ", stream: " + stream);
 
-                  setTimeout(createContainer, 2000, imageName, req.actionName);
+                  docker.modem.followProgress(stream, onFinished);
+
+                  function onFinished(err, output) {
+                      createContainer(imageName, req.actionName);
+                  }
               });
           });
         });
