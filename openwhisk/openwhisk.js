@@ -187,101 +187,121 @@ module.exports = function(RED) {
                   return containerInfo.NetworkSettings.Networks[key].NetworkID;
               })[0];
 
-              var imageName = (req.exec.kind).replace(":", "") + "action";
-              console.log("----------getting docker image: " + JSON.stringify(imageName));
-              var image = that.docker.getImage(imageName);
-              console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
+              function createContainer(imageName, actionName){
+                  that.docker.createContainer({Image: imageName, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
+                    if(err){
+                      console.log("err: " + err);
+                      console.log("jErr: " + JSON.stringify(err));
+                      reject(err);
+                    }
 
-              that.docker.createContainer({Image: imageName, Labels: {"action": req.actionName, "node": node.id}}, function (err, container) {
-                  if(err){
-                    console.log("err: " + err);
-                    console.log("jErr: " + JSON.stringify(err));
-                    reject(err);
-                  }
+                    var network = that.docker.getNetwork(nwid);
+                    console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
+                    network.connect({Container: container.id}, function (err, data) {
+                        console.log("Network connected: " + JSON.stringify(data));
 
-                  var network = that.docker.getNetwork(nwid);
-                  console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
-                  network.connect({Container: container.id}, function (err, data) {
-                      console.log("Network connected: " + JSON.stringify(data));
+                        console.log("Starting container");
+                        container.start(function (err, data) {
+                            console.log("Container started: " + JSON.stringify(data));
 
-                      console.log("Starting container");
-                      container.start(function (err, data) {
-                          console.log("Container started: " + JSON.stringify(data));
+                            container.inspect(function (err, containerInfo) {
 
-                          container.inspect(function (err, containerInfo) {
+                              var prefix = containerInfo.Name.substr(1) + ": ";
 
-                            var prefix = containerInfo.Name.substr(1) + ": ";
-
-                            // console.log("Container containerInfo: " + JSON.stringify(containerInfo));
-                            // container.attach({stream: true, stdout: false, stderr: false}, function (err, stream) {
-                            //   stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
-                            // });
+                              // console.log("Container containerInfo: " + JSON.stringify(containerInfo));
+                              // container.attach({stream: true, stdout: false, stderr: false}, function (err, stream) {
+                              //   stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
+                              // });
 
 
-                            container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
-                                //dockerode may demultiplex attach streams for you :)
-                                console.log("stream1: " + stream.constructor.name);
-                                
-                                // container.modem.demuxStream(stream, process.stdout, process.stderr);
+                              container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
+                                  //dockerode may demultiplex attach streams for you :)
+                                  console.log("stream1: " + stream.constructor.name);
+                                  
+                                  // container.modem.demuxStream(stream, process.stdout, process.stderr);
 
-                                var header = null;
+                                  var header = null;
 
-                                stream.on('readable', function() {
-                                  header = header || stream.read(8);
-                                  while (header !== null) {
-                                    var type = header.readUInt8(0);
-                                    var payload = stream.read(header.readUInt32BE(4));
-                                    if (payload === null) break;
-                                    if (type == 2) {
-                                      process.stderr.write(prefix + payload);
-                                    } else {
-                                      process.stdout.write(prefix + payload);
+                                  stream.on('readable', function() {
+                                    header = header || stream.read(8);
+                                    while (header !== null) {
+                                      var type = header.readUInt8(0);
+                                      var payload = stream.read(header.readUInt32BE(4));
+                                      if (payload === null) break;
+                                      if (type == 2) {
+                                        process.stderr.write(prefix + payload);
+                                      } else {
+                                        process.stdout.write(prefix + payload);
+                                      }
+                                      header = stream.read(8);
                                     }
-                                    header = stream.read(8);
-                                  }
-                                });
-                            });
+                                  });
+                              });
 
 
-                              console.log("node.resolution: " + node.resolution);
+                                console.log("node.resolution: " + node.resolution);
 
-                              //by default is by IP
-                              var address = containerInfo.NetworkSettings.Networks[nwName].IPAddress;
-                              if(node.resolution == "dns"){
-                                  address = containerInfo.NetworkSettings.Networks[nwName].Aliases[0];
-                              }
-
-                              console.log(req.actionName + " address: " +  address);
-
-                                var payload;
-                                if(req.exec.kind == "java"){
-                                  var main = req.exec.main;
-                                  var jar = req.exec.jar;
-                                  payload = {value: { main: "Hello", jar: jar}};
-                                }else{
-                                  payload = {value: { main: "main", code: req.exec.code}};
+                                //by default is by IP
+                                var address = containerInfo.NetworkSettings.Networks[nwName].IPAddress;
+                                if(node.resolution == "dns"){
+                                    address = containerInfo.NetworkSettings.Networks[nwName].Aliases[0];
                                 }
 
-                              var waitToInit = function(){
-                                  request("POST", payload, "http://" + address + ":8080/init").then(function(result){
-                                      console.log("result: " + result);
-                                      if(result != '{"OK":true}' && result != "OK"){
-                                        console.log(result + "!=" + '{"OK":true}');
-                                        setTimeout(waitToInit, 100);
-                                      }else{
-                                        console.log("Container inited!");
-                                        resolve(address);
-                                      }
-                                  }).catch(function (err) {
-                                    console.log("error: " + err);
-                                    setTimeout(waitToInit, 100);
-                                  });
-                              };
+                                console.log(req.actionName + " address: " +  address);
 
-                              waitToInit();
-                          });
-                      });
-                  });
+                                  var payload;
+                                  if(req.exec.kind == "java"){
+                                    var main = req.exec.main;
+                                    var jar = req.exec.jar;
+                                    payload = {value: { main: "Hello", jar: jar}};
+                                  }else{
+                                    payload = {value: { main: "main", code: req.exec.code}};
+                                  }
+
+                                var waitToInit = function(){
+                                    request("POST", payload, "http://" + address + ":8080/init").then(function(result){
+                                        console.log("result: " + result);
+                                        if(result != '{"OK":true}' && result != "OK"){
+                                          console.log(result + "!=" + '{"OK":true}');
+                                          setTimeout(waitToInit, 100);
+                                        }else{
+                                          console.log("Container inited!");
+                                          resolve(address);
+                                        }
+                                    }).catch(function (err) {
+                                      console.log("error: " + err);
+                                      setTimeout(waitToInit, 100);
+                                    });
+                                };
+
+                                waitToInit();
+                            });
+                        });
+                    });
+                });
+              }
+
+              var kind = req.exec.kind;
+              var imageName;
+              if(kind == "blackbox"){
+                  imageName = req.exec.image;
+              }else{
+                  imageName = kind.replace(":", "") + "action";
+              }
+              // console.log("----------getting docker image: " + JSON.stringify(imageName));
+              // var image = that.docker.getImage(imageName);
+              // console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
+
+              console.log("pulling image " + imageName);
+              that.docker.pull(imageName, function(err, stream){
+                  if(err){
+                      console.log("err: " + err);
+                      console.log("jErr: " + JSON.stringify(err));
+                      reject(err);
+                  }
+                  console.log("image " + imageName + " pulled" + ", stream: " + stream);
+
+                  setTimeout(createContainer, 2000, imageName, req.actionName);
               });
           });
         });
