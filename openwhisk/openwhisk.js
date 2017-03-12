@@ -251,9 +251,7 @@ module.exports = function(RED) {
 
                                   var payload;
                                   if(req.exec.kind == "java"){
-                                    var main = req.exec.main;
-                                    var jar = req.exec.jar;
-                                    payload = {value: { main: "Hello", jar: jar}};
+                                    payload = {value: { main: req.exec.main, jar: req.exec.jar}};
                                   }else{
                                     payload = {value: { main: "main", code: req.exec.code}};
                                   }
