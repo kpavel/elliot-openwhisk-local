@@ -47,6 +47,7 @@ module.exports = function(RED) {
       this.outStream  = new PassThrough();
 
       var tr = through(function(line){
+        console.log("prefixing: " + line);
         line = util.format('%s%s\n', prefix, line);
         this.queue(line);
       });
@@ -151,7 +152,7 @@ module.exports = function(RED) {
 
       this.invoke = function(container, params){
           return when.promise(function(resolve,reject) {
-            console.log("in invoke on container with: " + JSON.stringify(container) + "/" + JSON.stringify(params));
+            // console.log("in invoke on container with: " + JSON.stringify(container) + "/" + JSON.stringify(params));
             request("POST", {"value": params}, "http://" + container + ":8080/run").then(function(result){
               resolve({response: {result: result}});
             });
@@ -186,7 +187,7 @@ module.exports = function(RED) {
                   return containerInfo.NetworkSettings.Networks[key].NetworkID;
               })[0];
 
-              var imageName = req.exec.kind + "action"; //(req.exec.kind).replace(":", "") + "action";
+              var imageName = (req.exec.kind).replace(":", "") + "action";
               console.log("----------getting docker image: " + JSON.stringify(imageName));
               var image = that.docker.getImage(imageName);
               console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
@@ -209,15 +210,37 @@ module.exports = function(RED) {
 
                           container.inspect(function (err, containerInfo) {
 
+                            var prefix = containerInfo.Name.substr(1) + ": ";
+
                             // console.log("Container containerInfo: " + JSON.stringify(containerInfo));
+                            // container.attach({stream: true, stdout: false, stderr: false}, function (err, stream) {
+                            //   stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
+                            // });
+
 
                             container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
-                              stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
+                                //dockerode may demultiplex attach streams for you :)
+                                console.log("stream1: " + stream.constructor.name);
+                                
+                                // container.modem.demuxStream(stream, process.stdout, process.stderr);
+
+                                var header = null;
+
+                                stream.on('readable', function() {
+                                  header = header || stream.read(8);
+                                  while (header !== null) {
+                                    var type = header.readUInt8(0);
+                                    var payload = stream.read(header.readUInt32BE(4));
+                                    if (payload === null) break;
+                                    if (type == 2) {
+                                      process.stderr.write(prefix + payload);
+                                    } else {
+                                      process.stdout.write(prefix + payload);
+                                    }
+                                    header = stream.read(8);
+                                  }
+                                });
                             });
-                            // container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
-                            //     //dockerode may demultiplex attach streams for you :)
-                            //     container.modem.demuxStream(stream, process.stdout, process.stderr);
-                            // });
 
 
                               console.log("node.resolution: " + node.resolution);
