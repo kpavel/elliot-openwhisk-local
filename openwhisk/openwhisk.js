@@ -188,7 +188,7 @@ module.exports = function(RED) {
               })[0];
 
               function createContainer(imageName, actionName){
-                  that.docker.createContainer({Image: imageName, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
+                  that.docker.createContainer({Tty: true, Image: imageName, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
                     if(err){
                       console.log("err: " + err);
                       console.log("jErr: " + JSON.stringify(err));
@@ -208,35 +208,35 @@ module.exports = function(RED) {
 
                               var prefix = containerInfo.Name.substr(1) + ": ";
 
-                              // console.log("Container containerInfo: " + JSON.stringify(containerInfo));
-                              // container.attach({stream: true, stdout: false, stderr: false}, function (err, stream) {
-                              //   stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
-                              // });
-
-
+                              console.log("Container containerInfo: " + JSON.stringify(containerInfo));
                               container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
-                                  //dockerode may demultiplex attach streams for you :)
-                                  console.log("stream1: " + stream.constructor.name);
-                                  
-                                  // container.modem.demuxStream(stream, process.stdout, process.stderr);
-
-                                  var header = null;
-
-                                  stream.on('readable', function() {
-                                    header = header || stream.read(8);
-                                    while (header !== null) {
-                                      var type = header.readUInt8(0);
-                                      var payload = stream.read(header.readUInt32BE(4));
-                                      if (payload === null) break;
-                                      if (type == 2) {
-                                        process.stderr.write(prefix + payload);
-                                      } else {
-                                        process.stdout.write(prefix + payload);
-                                      }
-                                      header = stream.read(8);
-                                    }
-                                  });
+                                stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
                               });
+
+
+                              // container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
+                              //     //dockerode may demultiplex attach streams for you :)
+                              //     console.log("stream1: " + stream.constructor.name);
+                                  
+                              //     // container.modem.demuxStream(stream, process.stdout, process.stderr);
+
+                              //     var header = null;
+
+                              //     stream.on('readable', function() {
+                              //       header = header || stream.read(8);
+                              //       while (header !== null) {
+                              //         var type = header.readUInt8(0);
+                              //         var payload = stream.read(header.readUInt32BE(4));
+                              //         if (payload === null) break;
+                              //         if (type == 2) {
+                              //           process.stderr.write(prefix + payload);
+                              //         } else {
+                              //           process.stdout.write(prefix + payload);
+                              //         }
+                              //         header = stream.read(8);
+                              //       }
+                              //     });
+                              // });
 
 
                                 console.log("node.resolution: " + node.resolution);
@@ -285,27 +285,30 @@ module.exports = function(RED) {
               var imageName;
               if(kind == "blackbox"){
                   imageName = req.exec.image;
+
+                  // console.log("----------getting docker image: " + JSON.stringify(imageName));
+                  // var image = that.docker.getImage(imageName);
+                  // console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
+
+                  console.log("pulling image " + imageName);
+                  that.docker.pull(imageName, function(err, stream){
+                      if(err){
+                          console.log("err: " + err);
+                          console.log("jErr: " + JSON.stringify(err));
+                          reject(err);
+                      }
+
+                      docker.modem.followProgress(stream, onFinished);
+
+                      function onFinished(err, output) {
+                          createContainer(imageName, req.actionName);
+                      }
+                  });
               }else{
                   imageName = kind.replace(":", "") + "action";
+                  createContainer(imageName, req.actionName);
               }
-              // console.log("----------getting docker image: " + JSON.stringify(imageName));
-              // var image = that.docker.getImage(imageName);
-              // console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
-
-              console.log("pulling image " + imageName);
-              that.docker.pull(imageName, function(err, stream){
-                  if(err){
-                      console.log("err: " + err);
-                      console.log("jErr: " + JSON.stringify(err));
-                      reject(err);
-                  }
-
-                  docker.modem.followProgress(stream, onFinished);
-
-                  function onFinished(err, output) {
-                      createContainer(imageName, req.actionName);
-                  }
-              });
+              
           });
         });
       };
