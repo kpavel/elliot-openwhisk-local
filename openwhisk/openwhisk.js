@@ -178,7 +178,11 @@ module.exports = function(RED) {
           // console.log("++++++++++++NODERED container: " + JSON.stringify(container));
 
           container.inspect(function (err, containerInfo) {
-              // console.log("+++++++++NODERED containerInfo: " +  JSON.stringify(containerInfo));
+              if(err){
+                console.log("err: " + err);
+                console.log("jErr: " + JSON.stringify(err));
+                return reject(err);
+              }
 
               // get network id
               var nwName;
@@ -192,7 +196,7 @@ module.exports = function(RED) {
                     if(err){
                       console.log("err: " + err);
                       console.log("jErr: " + JSON.stringify(err));
-                      reject(err);
+                      return reject(err);
                     }
 
                     var network = that.docker.getNetwork(nwid);
@@ -293,7 +297,7 @@ module.exports = function(RED) {
                       if(err){
                           console.log("err: " + err);
                           console.log("jErr: " + JSON.stringify(err));
-                          reject(err);
+                          return reject(err);
                       }
 
                       docker.modem.followProgress(stream, onFinished);
