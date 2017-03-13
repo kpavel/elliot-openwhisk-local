@@ -22,6 +22,7 @@ module.exports = function(RED) {
     var https = require("follow-redirects").https;
     var urllib = require("url");
     var when = require('when');
+    var validator = require('validator');
 
 /////////////////////////////////////////////////////////////
 // PrefixStream, needed to make prefixes in container logs
@@ -47,7 +48,6 @@ module.exports = function(RED) {
       this.outStream  = new PassThrough();
 
       var tr = through(function(line){
-        console.log("prefixing: " + line);
         line = util.format('%s%s\n', prefix, line);
         this.queue(line);
       });
@@ -154,7 +154,7 @@ module.exports = function(RED) {
           return when.promise(function(resolve,reject) {
             // console.log("in invoke on container with: " + JSON.stringify(container) + "/" + JSON.stringify(params));
             request("POST", {"value": params}, "http://" + container + ":8080/run").then(function(result){
-              resolve({response: {result: result}});
+              resolve({response: {result: JSON.parse(result)}});
             });
           });
         };
@@ -217,32 +217,6 @@ module.exports = function(RED) {
                                 stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
                               });
 
-
-                              // container.attach({stream: true, stdout: true, stderr: true}, function (err, stream) {
-                              //     //dockerode may demultiplex attach streams for you :)
-                              //     console.log("stream1: " + stream.constructor.name);
-                                  
-                              //     // container.modem.demuxStream(stream, process.stdout, process.stderr);
-
-                              //     var header = null;
-
-                              //     stream.on('readable', function() {
-                              //       header = header || stream.read(8);
-                              //       while (header !== null) {
-                              //         var type = header.readUInt8(0);
-                              //         var payload = stream.read(header.readUInt32BE(4));
-                              //         if (payload === null) break;
-                              //         if (type == 2) {
-                              //           process.stderr.write(prefix + payload);
-                              //         } else {
-                              //           process.stdout.write(prefix + payload);
-                              //         }
-                              //         header = stream.read(8);
-                              //       }
-                              //     });
-                              // });
-
-
                                 console.log("node.resolution: " + node.resolution);
 
                                 //by default is by IP
@@ -259,6 +233,13 @@ module.exports = function(RED) {
                                   }else{
                                     payload = {value: { main: "main", code: req.exec.code}};
                                   }
+
+                                
+                                  if(validator.isBase64(req.exec.code)){
+                                    payload.value['binary'] = true;
+                                  }
+                                
+                                console("Sending payload: " + JSON.stringify(payload));
 
                                 var waitToInit = function(){
                                     request("POST", payload, "http://" + address + ":8080/init").then(function(result){

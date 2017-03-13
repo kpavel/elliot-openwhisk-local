@@ -30,6 +30,7 @@
     "dockerode": "2.3.2",
     "follow-redirects": "1.2.1",
     "when": "3.7.7",
-    "url": "*"
+    "url": "*",
+    "validator": "*"
   }
 }
