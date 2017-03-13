@@ -1,11 +1,11 @@
 {
-  "name": "node-red-node-openwhisk",
-  "version": "0.3.2",
-  "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk",
+  "name": "node-red-contrib-openwhisk-local",
+  "version": "0.0.1",
+  "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk with local docker engine backend support",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ibmets/node-red-node-openwhisk.git"
+    "url": "https://github.com/kpavel/node-red-node-openwhisk.git"
   },
   "keywords": [
     "node-red",
@@ -17,8 +17,6 @@
     }
   },
   "contributors": [
-    "Nick O'Leary <nick.oleary@gmail.com>",
-    "James Thomas <james@jamesthom.as>"
   ],
   "dependencies": {
     "openwhisk": "^3.2.1",
