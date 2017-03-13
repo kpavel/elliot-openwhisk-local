@@ -239,7 +239,7 @@ module.exports = function(RED) {
                                     payload.value['binary'] = true;
                                   }
                                 
-                                console("Sending payload: " + JSON.stringify(payload));
+                                console.log("Sending payload: " + JSON.stringify(payload));
 
                                 var waitToInit = function(){
                                     request("POST", payload, "http://" + address + ":8080/init").then(function(result){
