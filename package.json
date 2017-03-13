@@ -1,7 +1,7 @@
 {
-  "name": "node-red-contrib-openwhisk-local",
+  "name": "elliot-openwhisk-local",
   "version": "0.0.1",
-  "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk with local docker engine backend support",
+  "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk with local docker engine backend support, work in progress",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -27,6 +27,9 @@
     "duplexer": "0.1.1",
     "split": "1.0.0",
     "through": "2.3.8",
-    "dockerode": "2.3.2"
+    "dockerode": "2.3.2",
+    "follow-redirects": "1.2.1",
+    "when": "3.7.7",
+    "url": "*"
   }
 }
