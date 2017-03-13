@@ -1,6 +1,6 @@
 {
   "name": "elliot-openwhisk-local",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A set of nodes for interacting with IBM Bluemix OpenWhisk with local docker engine backend support, work in progress",
   "license": "Apache-2.0",
   "repository": {
