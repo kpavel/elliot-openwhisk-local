@@ -525,7 +525,9 @@ module.exports = function(RED) {
 
               if(actionParameters){
                 actionParameters.forEach(function(param){
-                  params[param.key] = param.value;
+                  if(!params[param.key]){
+                      params[param.key] = param.value;
+                  }
                 });
               }
 
