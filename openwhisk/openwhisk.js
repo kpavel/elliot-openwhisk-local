@@ -192,6 +192,8 @@ module.exports = function(RED) {
               })[0];
 
               function createContainer(imageName, actionName){
+                node.status({fill:"yellow",shape:"dot",text:"creating container"});
+
                   that.docker.createContainer({Tty: true, Image: imageName, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
                     if(err){
                       console.log("err: " + err);
@@ -257,6 +259,7 @@ module.exports = function(RED) {
                                     });
                                 };
 
+                                node.status({fill:"yellow",shape:"dot",text:"initializing action"});
                                 waitToInit();
                             });
                         });
@@ -472,6 +475,7 @@ module.exports = function(RED) {
 
         if(this.localservice && node.action && node.namespace && node.runtime == "local"){
             console.log("Getting action: " + node.action);
+            node.status({fill:"yellow",shape:"dot",text:"retrieving action"});
             this.service.client.actions.get({actionName: node.action, namespace: node.namespace}).then(function (result) { 
               console.log("Got action: " + JSON.stringify(result));
 
@@ -479,6 +483,7 @@ module.exports = function(RED) {
                 throw new Error("local docker client not initilized");
               }
 
+              node.status({fill:"yellow",shape:"dot",text:"creating container"});
               node.localservice.client.create({actionName: node.action, exec: result.exec, docker: node.localservice.dockerurl})
                 .then(function (result) {
                   console.log("container create result: " + result);
