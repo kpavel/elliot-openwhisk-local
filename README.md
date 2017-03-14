@@ -9,6 +9,8 @@ Includes a 'local' mode, where Node-RED is using a local Docker API to provision
 
 Currently Node-RED itself must run in a container managed by the same Docker endpoint (to simplify connectivity setup). Docker API can be accessible on a local socket (e.g., with `/var/run/docker.sock` mapped from the Docker host into Node-RED container), or via a remote API.
 
+Such a setup can be useful on embedded devices (such as IoT gateways), micro-clouds (e.g., single edge server), etc.
+
 # Local Mode Setup
 ## Prereqs
 You need a Docker host, where the entire deployment will be hosted (both Node-RED and the action containers). You also need `npm` and `git` packages installed.
