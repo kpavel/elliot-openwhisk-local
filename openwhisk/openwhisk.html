@@ -103,11 +103,6 @@
     </select>
 </div>
 
-<!--<div class="form-row">
-    <label for="node-input-locally" style="width: 75px;"> Run locally</label>
-    <input type="checkbox" id="node-input-locally" style="width: 14px; margin-top: 0px;">
-</div>-->
-
 <div class="form-row">
     <label for="node-input-runtime"><i class="fa fa-cloud"></i> Runtime</label>
     <select type="text" id="node-input-runtime">
@@ -124,13 +119,13 @@
 <div class="form-row">
     <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
     <input type="text"  style="width: 45%" id="node-input-action">
-    <div style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
+    <div class="edit-source" style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
       <label for="node-input-edit" style="width: 75px;">Allow Edits</label>
       <input type="checkbox" id="node-input-edit" style="width: 14px; margin-top: 0px;">
   </div>
 </div>
 
-<div class="form-row action-source" style="display: none;">
+<div class="form-row action-source node-input-parameters-container-label" style="display: none;">
   <label><i class="fa fa-list"></i> Parameters</label>
   <input type="hidden" id="node-input-parameters" autofocus="autofocus">
 </div>
@@ -398,6 +393,13 @@ action; any other type is ignored.</p>
 
       $.getJSON(url)
         .done(function (result) {
+
+          if(result.exec.kind.indexOf("nodejs") < 0){
+              $('.edit-source').hide();
+              $('.action-source').hide();
+              $(".fa-cog").removeClass("fa-spin");
+              return;
+          }
           
           $("#node-input-edit").prop("checked", false);
           $(".fa-cog").removeClass("fa-spin")
@@ -408,13 +410,6 @@ action; any other type is ignored.</p>
             param.disabled = true;
             $("#node-input-parameters-container").editableList('addItem', param);
           });
-
-          if(result.exec.kind != "nodejs"){
-              $("#node-input-edit").hide();
-              $('.action-source').hide();
-              $(".fa-cog").removeClass("fa-spin");
-              return;
-          }
 
           node.editor.setValue(result.exec.code);
           node.editor.clearSelection();
@@ -487,6 +482,9 @@ action; any other type is ignored.</p>
         color: "#6C9FC3",
         icon: "openwhisk.png",
         paletteLabel:"OpenWhisk",
+        labelStyle: function() {
+            return this.runtime == "local" ? "node_label_italic":"";
+        },
         oneditprepare: function () {
           // create editor dom element
           this.editor = RED.editor.createEditor({
@@ -529,7 +527,7 @@ action; any other type is ignored.</p>
 
           $("#node-input-runtime").on("change",function() {
                 if (this.value === "service") { $('.action-localservice').hide(); }
-                else { $('.action-localservice').show(); }
+                else {$('.action-localservice').show(); }
           });
             
           if (this.service) {

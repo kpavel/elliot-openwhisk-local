@@ -473,6 +473,7 @@ module.exports = function(RED) {
             });
         }
 
+        var actionParameters;
         if(this.localservice && node.action && node.namespace && node.runtime == "local"){
             console.log("Getting action: " + node.action);
             node.status({fill:"yellow",shape:"dot",text:"retrieving action"});
@@ -483,6 +484,8 @@ module.exports = function(RED) {
                 throw new Error("local docker client not initilized");
               }
 
+              actionParameters = result.parameters;
+              console.log("params: " + actionParameters);
               node.status({fill:"yellow",shape:"dot",text:"creating container"});
               node.localservice.client.create({actionName: node.action, exec: result.exec, docker: node.localservice.dockerurl})
                 .then(function (result) {
@@ -519,6 +522,15 @@ module.exports = function(RED) {
             }
 
             if(node.localservice && node.actioncontainer){
+
+              if(actionParameters){
+                actionParameters.forEach(function(param){
+                  params[param.key] = param.value;
+                });
+              }
+
+              console.log("Params: " + JSON.stringify(params));
+
                 node.localservice.client.invoke(node.actioncontainer, params)
                 .then(function (res) {
                   msg.data = res;
