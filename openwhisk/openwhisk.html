@@ -112,7 +112,7 @@
     <label for="node-input-runtime"><i class="fa fa-cloud"></i> Runtime</label>
     <select type="text" id="node-input-runtime">
         <option value="service">OpenWhisk service</option>
-        <option value="local">Action containers service</option>
+        <option value="local">Local</option>
     </select>
 </div>
 
@@ -201,11 +201,11 @@ action; any other type is ignored.</p>
         defaults: {
             name: { value: "" },
             resolution: {value: "ip", required:true},
-            dockerurl: { value: "http://hslt1:2375"},
+            dockerurl: { value: ""},
             docker: { value: "local", required: true }
         },
         label: function() {
-            return this.name || this.namespace ||  "Local Docker";
+            return this.name || this.namespace ||  "Docker engine on localhost";
         },
         oneditprepare: function () {
             if (this.docker == "local") {

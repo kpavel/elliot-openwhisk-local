@@ -235,7 +235,7 @@ module.exports = function(RED) {
                                   }
 
                                 
-                                  if(validator.isBase64(req.exec.code)){
+                                  if(req.exec.code && validator.isBase64(req.exec.code)){
                                     payload.value['binary'] = true;
                                   }
                                 
@@ -338,7 +338,7 @@ module.exports = function(RED) {
 
         this.dockerPort = urllib.parse(node.dockerurl).port;
 
-        if(!this.dockerurl || !this.dockerPort){
+        if((node.docker != "local") && (!this.dockerurl || !this.dockerPort)){
           node.error("Invalid docker url, example of valid url: http://mydockerhost:2375");
           return;
         }
