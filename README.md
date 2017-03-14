@@ -49,6 +49,8 @@ $ docker-compose up
 ```
 Then open the Node-RED editor at `http://<your-docker-host>:8080/`, and start building the flow (alternatively, put your pre-designed `flows.json` in the data directory). In order to set up an OpenWhisk Action node to run locally, specify "service", "namespace" and "action" as with regular OpenWhisk Action node, then specify "Local" in the "Runtime" drop-down, and select "Docker engine on localhost" in "Docker" drop-down (the passthru of `/var/run/docker.sock`, as specified in the respective volume mapping in `docker-compose.yml`, ensures that Docker socket is available within the Node-RED container too).
 
-That's it! Enjoy the local mode.
+That's it! Now once you click 'Deploy', new container will be provisioned on your Docker host, the action code will be loaded into it and the action will be invoked locally (wired to the rest of the flow, as usual).
+
+Enjoy the local mode!
 
 Instructions for working with the original node-red-node-openwhisk package can be found in https://github.com/ibmets/node-red-node-openwhisk/blob/master/README.md
