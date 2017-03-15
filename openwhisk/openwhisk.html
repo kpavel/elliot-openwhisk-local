@@ -104,6 +104,16 @@
 </div>
 
 <div class="form-row">
+    <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
+    <input type="text"  style="width: 45%" id="node-input-action">
+    <div class="edit-source" style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
+      <label for="node-input-edit" style="width: 75px;">Allow Edits</label>
+      <input type="checkbox" id="node-input-edit" style="width: 14px; margin-top: 0px;">
+  </div>
+</div>
+
+
+<div class="form-row">
     <label for="node-input-runtime"><i class="fa fa-cloud"></i> Runtime</label>
     <select type="text" id="node-input-runtime">
         <option value="service">OpenWhisk service</option>
@@ -114,15 +124,6 @@
 <div class="form-row action-localservice">
     <label for="node-input-localservice"><i class="fa fa-cloud"></i> Docker</label>
     <input type="text" id="node-input-localservice">
-</div>
-
-<div class="form-row">
-    <label for="node-input-action"><i class="fa fa-cog"></i> Action</label>
-    <input type="text"  style="width: 45%" id="node-input-action">
-    <div class="edit-source" style="display: inline-block; width: 95px; margin: 5px 35px 0 10px;">
-      <label for="node-input-edit" style="width: 75px;">Allow Edits</label>
-      <input type="checkbox" id="node-input-edit" style="width: 14px; margin-top: 0px;">
-  </div>
 </div>
 
 <div class="form-row action-source node-input-parameters-container-label" style="display: none;">
