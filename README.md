@@ -7,6 +7,8 @@ A set of Node-RED nodes for interacting with Apache OpenWhisk (such as [IBM Blue
 
 Includes a 'local' mode, where Node-RED is using a local Docker API to provision and manage local instances of OpenWhisk action containers (retrieved from a remote OpenWhisk service on demand).
 
+![LOWN overivew](lown.png)
+
 Currently Node-RED itself must run in a container managed by the same Docker endpoint (to simplify connectivity setup). Docker API can be accessible on a local socket (e.g., with `/var/run/docker.sock` mapped from the Docker host into Node-RED container), or via a remote API.
 
 Such a setup can be useful on embedded devices (such as IoT gateways), micro-clouds (e.g., single edge server), etc.
