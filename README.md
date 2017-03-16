@@ -1,5 +1,5 @@
-elliot-openwhisk-local
-======================
+leon-openwhisk-local
+====================
 
 ***WORK IN PROGRESS*** - DO NOT use this node except for experimentation.
 
