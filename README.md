@@ -44,7 +44,7 @@ These images will be used to spawn containers for 'native' actions (e.g., create
 In order to use OpenWhisk nodes in Node-RED, you need to install the required nodejs modules in the `/data` volume specified in `docker-compose.yml` above:
 ```
 $ cd /tmp/data
-$ npm install kpavel/elliot-openwhisk-local
+$ npm install kpavel/leon-openwhisk-local
 ```
 ## Run
 Now you can start the Node-RED container:
