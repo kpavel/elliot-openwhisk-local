@@ -201,10 +201,10 @@ module.exports = function(RED) {
                       return reject(err);
                     }
 
-                    // var network = that.docker.getNetwork(nwid);
-                    // console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
-                    // network.connect({Container: container.id}, function (err, data) {
-                    //     console.log("Network connected: " + JSON.stringify(data));
+                    var network = that.docker.getNetwork(nwid);
+                    console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
+                    network.connect({Container: container.id}, function (err, data) {
+                        console.log("Network connected: " + JSON.stringify(data));
 
                         console.log("Starting container");
                         container.start(function (err, data) {
@@ -263,7 +263,7 @@ module.exports = function(RED) {
                                 waitToInit();
                             });
                         });
-                    // });
+                    });
                 });
               }
 
