@@ -184,17 +184,12 @@ module.exports = function(RED) {
                 return reject(err);
               }
 
-              // get network id
-              var nwName;
-              var nwid = Object.keys(containerInfo.NetworkSettings.Networks).map(function(key, index) {
-                  nwName = key;
-                  return containerInfo.NetworkSettings.Networks[key].NetworkID;
-              })[0];
-
+              // get network name
+              var nwName = Object.keys(containerInfo.NetworkSettings.Networks)[0];                  
               function createContainer(imageName, actionName){
                 node.status({fill:"yellow",shape:"dot",text:"creating container"});
 
-                  that.docker.createContainer({Tty: true, Image: imageName, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
+                  that.docker.createContainer({Tty: true, Image: imageName, NetworkMode: nwName, 'HostConfig': {NetworkMode: nwName}, Labels: {"action": actionName, "node": node.id}}, function (err, container) {
                     if(err){
                       console.log("err: " + err);
                       console.log("jErr: " + JSON.stringify(err));
