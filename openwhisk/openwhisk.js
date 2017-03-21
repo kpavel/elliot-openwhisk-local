@@ -129,7 +129,6 @@ module.exports = function(RED) {
       var that = this;
 
       this.cleanup = function(){
-          // return when.promise(function(resolve,reject) {
             var opts= { "filters": { "label": [ "node=" + node.id ] } };
             that.docker.listContainers(opts, function (err, containers) {
               console.log("listed containers: " + containers);
@@ -147,12 +146,10 @@ module.exports = function(RED) {
                 }
               )}              
             });
-          // });
         };
 
       this.invoke = function(container, params){
           return when.promise(function(resolve,reject) {
-            // console.log("in invoke on container with: " + JSON.stringify(container) + "/" + JSON.stringify(params));
             request("POST", {"value": params}, "http://" + container + ":8080/run").then(function(result){
               resolve({response: {result: JSON.parse(result)}});
             });
@@ -162,10 +159,6 @@ module.exports = function(RED) {
       // resolves container address
       this.create = function(req){
         return when.promise(function(resolve,reject) {
-
-          // //protocol http vs https is automatically detected
-          // var docker = new Docker({ host: req.docker, port: 2375});
-
           console.log("----------process.cwd(); " + process.cwd());
           console.log("docker: " + that.docker);
 
@@ -175,8 +168,6 @@ module.exports = function(RED) {
 
           // get node-red container info
           var container = that.docker.getContainer(redhostname);
-          // console.log("++++++++++++NODERED container: " + JSON.stringify(container));
-
           container.inspect(function (err, containerInfo) {
               if(err){
                 console.log("err: " + err);
@@ -185,7 +176,8 @@ module.exports = function(RED) {
               }
 
               // get network name
-              var nwName = Object.keys(containerInfo.NetworkSettings.Networks)[0];                  
+              var nwName = Object.keys(containerInfo.NetworkSettings.Networks)[0];
+              console.log("creating container with network name: " + nwName);
               function createContainer(imageName, actionName){
                 node.status({fill:"yellow",shape:"dot",text:"creating container"});
 
@@ -195,11 +187,6 @@ module.exports = function(RED) {
                       console.log("jErr: " + JSON.stringify(err));
                       return reject(err);
                     }
-
-                    // var network = that.docker.getNetwork(nwid);
-                    // console.log("Attaching network " + JSON.stringify(network) + " to container " + container.id);
-                    // network.connect({Container: container.id}, function (err, data) {
-                    //     console.log("Network connected: " + JSON.stringify(data));
 
                         console.log("Starting container");
                         container.start(function (err, data) {
@@ -258,7 +245,6 @@ module.exports = function(RED) {
                                 waitToInit();
                             });
                         });
-                    // });
                 });
               }
 
@@ -266,10 +252,6 @@ module.exports = function(RED) {
               var imageName;
               if(kind == "blackbox"){
                   imageName = req.exec.image;
-
-                  // console.log("----------getting docker image: " + JSON.stringify(imageName));
-                  // var image = that.docker.getImage(imageName);
-                  // console.log("------found docker image: " + JSON.stringify(image) + ", node.id: " + node.id);
 
                   console.log("pulling image " + imageName);
                   that.docker.pull(imageName, function(err, stream){
@@ -570,10 +552,6 @@ module.exports = function(RED) {
           });
 
           res.on('end',function() {
-            // try {
-            //   result = JSON.parse(result);
-            // }catch(e) { reject(e) }
-
             resolve(result);
           });
         });
