@@ -201,14 +201,7 @@ module.exports = function(RED) {
                                 stream.pipe(PrefixStream(containerInfo.Name.substr(1) + ": ")).pipe(process.stdout); 
                               });
 
-                                console.log("node.resolution: " + node.resolution);
-
-                                //by default is by IP
                                 var address = containerInfo.NetworkSettings.Networks[nwName].IPAddress;
-                                if(node.resolution == "dns"){
-                                    address = containerInfo.NetworkSettings.Networks[nwName].Aliases[0];
-                                }
-
                                 console.log(req.actionName + " address: " +  address);
 
                                   var payload;
@@ -308,7 +301,6 @@ module.exports = function(RED) {
         RED.nodes.createNode(this,n);
         this.name = n.name;
         this.dockerurl = n.dockerurl;
-        this.resolution = n.resolution;
         this.docker = n.docker;
 
         var node = this;

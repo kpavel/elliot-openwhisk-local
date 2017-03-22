@@ -45,14 +45,6 @@
 </div>
 
 <div class="form-row">
-        <label for="node-input-resolution"><i class="fa fa-envelope"></i> Resolution</label>
-        <select type="text" id="node-input-resolution">
-            <option value="ip">IP</option>
-            <option value="dns">DNS</option>
-        </select>
-</div>
-
-<div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="node-red:common.label.name"></span></label>
     <input type="text" id="node-config-input-name" data-i18n="[placeholder]node-red:common.label.name">
 </div>
@@ -196,7 +188,6 @@ action; any other type is ignored.</p>
         category: 'config',
         defaults: {
             name: { value: "" },
-            resolution: {value: "ip", required:true},
             dockerurl: { value: ""},
             docker: { value: "local", required: true }
         },
