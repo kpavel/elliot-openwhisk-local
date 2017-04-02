@@ -9,7 +9,7 @@ Includes a 'local' mode, where Node-RED is using a local Docker API to provision
 
 ![LEON overivew](leon2.png)
 
-Currently Node-RED itself must run in a container managed by the same Docker endpoint (to simplify connectivity setup). Docker API can be accessible on a local socket (e.g., with `/var/run/docker.sock` mapped from the Docker host into Node-RED container), or via a remote API.
+Currently Node-RED itself must run in a container managed by the same Docker endpoint (to simplify connectivity setup). Docker API can be accessible on a local socket (e.g., with `/var/run/docker.sock` mapped from the Docker host into Node-RED container), or via a remote API. Docker Swarm can be used to host action containers on a pool of Docker hosts (sharing an overlay network).
 
 Such a setup can be useful on embedded devices (such as IoT gateways), micro-clouds (e.g., single edge server), etc.
 
