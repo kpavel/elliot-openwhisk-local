@@ -3,6 +3,8 @@ leon-openwhisk-local
 
 ***WORK IN PROGRESS*** - DO NOT use this node except for experimentation.
 
+***NOTE:*** this fork is **deprecated**, and will be removed soon. Please, refer to [https://github.com/kpavel/openwhisk-light](https://github.com/kpavel/openwhisk-light) instead (which provides similar functionality in conjunction with an unmodified version of node-red-node-openwhisk).
+
 A set of Node-RED nodes for interacting with Apache OpenWhisk (such as [IBM Bluemix OpenWhisk](https://console.ng.bluemix.net/openwhisk)).
 
 Includes a 'local' mode, where Node-RED is using a local Docker API to provision and manage local instances of OpenWhisk action containers (retrieved from a remote OpenWhisk service on demand).
